@@ -9,14 +9,18 @@ st.title("🌍 Climate Extreme Temperature Predictor")
 st.write("Enter environmental values to predict extreme temperature event:")
 
 # =======================
-# Safe model load
+# Safe model & scaler load
 # =======================
-model_path = os.path.join(os.path.dirname(__file__), "climate_model.pkl")
-if os.path.exists(model_path):
+base_path = os.path.dirname(__file__)
+model_path = os.path.join(base_path, "climate_model.pkl")
+scaler_path = os.path.join(base_path, "scaler.pkl")
+
+if os.path.exists(model_path) and os.path.exists(scaler_path):
     model = joblib.load(model_path)
+    scaler = joblib.load(scaler_path)
 else:
-    st.error(f"Model file not found at {model_path}")
-    st.stop()  # Stop app if model missing
+    st.error("Model or scaler file not found. Make sure climate_model.pkl and scaler.pkl are in the same folder as app.py")
+    st.stop()
 
 # =======================
 # User input
@@ -35,10 +39,12 @@ month = st.number_input("Month", min_value=1, max_value=12, value=1)
 # =======================
 if st.button("Predict"):
     input_data = np.array([[temperature, co2, sea_level, precipitation, humidity, wind, year, month]])
-    prediction = model.predict(input_data)
     
-    # Safe probability calculation
-    proba = model.predict_proba(input_data)[0]
+    # Apply scaler before prediction
+    input_scaled = scaler.transform(input_data)
+
+    prediction = model.predict(input_scaled)
+    proba = model.predict_proba(input_scaled)[0]
     probability = proba[1] if prediction[0] == 1 else proba[0]
 
     if prediction[0] == 1:
